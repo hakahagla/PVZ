@@ -101,6 +101,8 @@ class game():
     def clicked(self):
         
         global drag
+        self.targetxz = 0
+        self.targetxy = 0
         peashooter = pygame.image.load("plants/Peashooter/Peashooter_0.png").convert_alpha()
         x,y=pygame.mouse.get_pos()
         if x >= 100 and x <= 160 and y >= 10 and y <= 95:
@@ -109,8 +111,16 @@ class game():
             game.drag(self,peashooter)
         else:
             print(x,y)
+            self.distancez = 999
             created_zombie.append(str(len(created_zombie)+1))
-            globals()['objz'+created_zombie[len(created_zombie)-1]] = normalzombie(x-30,y-50)
+            for i in range (0,len(self.c_coord)):
+                self.diffxz = self.c_coord[i][0]-x
+                self.diffyz = self.c_coord[i][1]-y
+                self.temp = (self.diffxz**2+self.diffyz**2)**1/2
+                if self.temp <= self.distancez:
+                    self.targetxz,self.targetyz = self.c_coord[i][0],self.c_coord[i][1]
+                    self.distance = self.temp
+            globals()['objz'+created_zombie[len(created_zombie)-1]] = normalzombie(self.targetxz-30,self.targetyz-50)
             
         #Need to check sunlight count and deduct      
 
@@ -145,10 +155,14 @@ class plant():
         self.a_dmg = 0
         self.a_speed = 0
         self.framevalue = 0
+        self.cd = 0
+        self.cd_constant = 0
         self.x,self.y = x,y
         self.count = 0
 
     def animation(self,obj):
+        global bullet_normal
+        
         if self.framevalue >= len(obj):
             self.framevalue = 0
         self.currframe = obj[self.framevalue]
@@ -157,23 +171,26 @@ class plant():
             self.count = 0
         self.count += 1
         menu.screen.blit(self.currframe,(self.x,self.y))
+        self.shoot(bullet_normal)
 
     def shoot(self,obj):
         global created_zombie
         global created_bullet
-        self.zombiey = [150,260,370,480,590]
-        if len(created_zombie) != 0:
+        
+        if len(created_zombie) != 0 and self.cd == 0:
             for i in range(0,len(created_zombie)):
                 x,y = globals()['objz'+str(created_zombie[i])].coord()
-                if y == self.y:
+                if y + 50 == self.y + 25:
                     created_bullet.append(len(created_bullet)+1)
-                    #globals()['objb'+str(created_bullet[i]]
+                    globals()['objb'+str(len(created_bullet))] = normal_b(2,obj,self.x-10,self.y,created_bullet[-1])
+                    print('objb'+str(len(created_bullet)))
+                    self.cd = self.cd_constant
+        if self.cd < 0:
+            self.cd = 50
+        self.cd -= 1
+
                               
                     
-                    
-                
-        
-        
     def attack(self):
         pass
 
@@ -189,6 +206,8 @@ class peashooter(plant):
         self.health = 100
         self.a_dmg = 20
         self.a_speed = 3
+        self.cd = 50
+        self.cd_constant = 240 * 0.5
         self.framevalue = 0
         self.x,self.y = x,y
         self.count = 0
@@ -210,7 +229,7 @@ class zombie():
         pass
 
     def coord(self):
-        return self.x,slef.y
+        return self.x,self.y
 
     def animation(self,obj):
         if self.framevalue >= len(obj):
@@ -223,22 +242,38 @@ class zombie():
         self.x -= self.m_speed
         menu.screen.blit(self.currframe,(self.x,self.y))
 
-    
-
 class normalzombie(zombie):
     pass
 
 #=================================================================================================
 
 class bullet():
-    def __init__(self,dmg,anim):
+    def __init__(self,dmg,anim,x,y,index):
         self.dmg = dmg
         self.speed = 0.1
+        self.x = x + 30
+        self.y = y
+        self.anim = anim
+        self.index = index
+        self.collided = False
         
+    def move(self):
+        self.x += 1
+        menu.screen.blit(self.anim,(self.x,self.y))
+        self.collision()
 
+    def collision(self):
+        global created_zombie
+        global created_bullet
+        
+        for i in range(0,len(created_zombie)):
+            x,y = globals()['objz'+str(created_zombie[i])].coord()
+            if int(self.x + 10) >= int(x - 20) and int(self.x + 10) <= int(x - 18):
+                created_bullet.remove(self.index)
+                print(created_bullet)
+                del globals()['objb'+str((self.index))]
+                
 
-    def collision(self,x,y):
-        pass
 
 class normal_b(bullet):
     pass
@@ -341,6 +376,8 @@ created_zombie = []
 created_sun = []
 created_bullet = []
 
+
+
 while running:
   if ingame == True:
       clock.tick(240)
@@ -349,6 +386,13 @@ while running:
           globals()['objp'+str((i+1))].animation(peashooter_anim)
       for i in range(0,len(created_zombie)):
           globals()['objz'+str((i+1))].animation(zombie_anim)
+      for i in range(0,len(created_bullet)):
+            if i+1 in created_bullet:
+                print('Bullets existing: ' , len(created_bullet))
+                globals()['objb'+str((i+1))].move()
+            
+                
+            
   if drag == True:
       currgame.clicked()
   pygame.display.flip()
