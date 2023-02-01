@@ -176,18 +176,23 @@ class plant():
     def shoot(self,obj):
         global created_zombie
         global created_bullet
-        
+
+        self.cd -= 1
         if len(created_zombie) != 0 and self.cd == 0:
             for i in range(0,len(created_zombie)):
                 x,y = globals()['objz'+str(created_zombie[i])].coord()
-                if y + 50 == self.y + 25:
-                    created_bullet.append(len(created_bullet)+1)
-                    globals()['objb'+str(len(created_bullet))] = normal_b(2,obj,self.x-10,self.y,created_bullet[-1])
-                    print('objb'+str(len(created_bullet)))
+                if y + 50 == self.y + 25: #If there is a zombie in front
+                    for j in range(0,999):
+                        if j+1 not in created_bullet:
+                            print(created_bullet)
+                            created_bullet.append(j+1)
+                            globals()['objb'+str(j+1)] = normal_b(2,obj,self.x-10,self.y,j+1)
+                            print(created_bullet)
+                            break
                     self.cd = self.cd_constant
         if self.cd < 0:
             self.cd = 50
-        self.cd -= 1
+        
 
                               
                     
@@ -207,7 +212,7 @@ class peashooter(plant):
         self.a_dmg = 20
         self.a_speed = 3
         self.cd = 50
-        self.cd_constant = 240 * 0.5
+        self.cd_constant = 240 * 1
         self.framevalue = 0
         self.x,self.y = x,y
         self.count = 0
@@ -258,9 +263,10 @@ class bullet():
         self.collided = False
         
     def move(self):
+        self.collision()
         self.x += 1
         menu.screen.blit(self.anim,(self.x,self.y))
-        self.collision()
+        
 
     def collision(self):
         global created_zombie
@@ -387,9 +393,7 @@ while running:
       for i in range(0,len(created_zombie)):
           globals()['objz'+str((i+1))].animation(zombie_anim)
       for i in range(0,len(created_bullet)):
-            if i+1 in created_bullet:
-                print('Bullets existing: ' , len(created_bullet))
-                globals()['objb'+str((i+1))].move()
+          globals()['objb'+str(created_bullet[i-1])].move()
             
                 
             
