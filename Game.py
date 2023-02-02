@@ -112,7 +112,7 @@ class game():
         else:
             print(x,y)
             self.distancez = 999
-            created_zombie.append(str(len(created_zombie)+1))
+            created_zombie.append(len(created_zombie)+1)
             for i in range (0,len(self.c_coord)):
                 self.diffxz = self.c_coord[i][0]-x
                 self.diffyz = self.c_coord[i][1]-y
@@ -120,7 +120,7 @@ class game():
                 if self.temp <= self.distancez:
                     self.targetxz,self.targetyz = self.c_coord[i][0],self.c_coord[i][1]
                     self.distance = self.temp
-            globals()['objz'+created_zombie[len(created_zombie)-1]] = normalzombie(self.targetxz-30,self.targetyz-50)
+            globals()['objz'+str(created_zombie[len(created_zombie)-1])] = normalzombie(self.targetxz-30,self.targetyz-50,len(created_zombie)-1)
             
         #Need to check sunlight count and deduct      
 
@@ -184,17 +184,13 @@ class plant():
                 if y + 50 == self.y + 25: #If there is a zombie in front
                     for j in range(0,999):
                         if j+1 not in created_bullet:
-                            print(created_bullet)
                             created_bullet.append(j+1)
-                            globals()['objb'+str(j+1)] = normal_b(2,obj,self.x-10,self.y,j+1)
-                            print(created_bullet)
+                            globals()['objb'+str(j+1)] = normal_b(20,obj,self.x-10,self.y,j+1)
                             break
                     self.cd = self.cd_constant
         if self.cd < 0:
             self.cd = 50
-        
-
-                              
+         
                     
     def attack(self):
         pass
@@ -202,7 +198,6 @@ class plant():
     def takedmg(self): 
         pass
 
-    
 
 class peashooter(plant):
     global bullet_normal
@@ -221,7 +216,8 @@ class peashooter(plant):
 #=================================================================================================
 
 class zombie():
-    def __init__(self,x,y):
+
+    def __init__(self,x,y,index):
         self.health = 100
         self.a_dmg = 20
         self.a_speed = 3
@@ -229,6 +225,8 @@ class zombie():
         self.framevalue = 0
         self.x,self.y = x,y
         self.count = 0
+        self.index = index
+        self.dcount = 0
 
     def move(self):
         pass
@@ -236,7 +234,8 @@ class zombie():
     def coord(self):
         return self.x,self.y
 
-    def animation(self,obj):
+    def animation(self,obj,anim_type):
+        self.atype = anim_type
         if self.framevalue >= len(obj):
             self.framevalue = 0
         self.currframe = obj[self.framevalue]
@@ -244,8 +243,23 @@ class zombie():
             self.framevalue += 1
             self.count = 0
         self.count += 1
-        self.x -= self.m_speed
-        menu.screen.blit(self.currframe,(self.x,self.y))
+        if anim_type == 1:
+            self.x -= self.m_speed
+            menu.screen.blit(self.currframe,(self.x,self.y))
+        elif anim_type == 2:
+            menu.screen.blit(self.currframe,(self.x-40,self.y-10))
+
+
+    def death(self,obj):
+        global created_zombie
+        if self.health <= 0:
+            self.animation(zombie_anim_death,2)
+            self.dcount += 1
+        if self.dcount == 400 :
+            print(created_zombie)
+            print(self.index)
+            created_zombie.remove(self.index+1)
+            del globals()['objz'+str(self.index+1)]
 
 class normalzombie(zombie):
     pass
@@ -276,7 +290,7 @@ class bullet():
             x,y = globals()['objz'+str(created_zombie[i])].coord()
             if int(self.x + 10) >= int(x - 20) and int(self.x + 10) <= int(x - 18):
                 created_bullet.remove(self.index)
-                print(created_bullet)
+                globals()['objz'+str(created_zombie[i])].health -= self.dmg
                 del globals()['objb'+str((self.index))]
                 
 
@@ -373,6 +387,58 @@ pygame.image.load("plants/Sun/Sun_19.png").convert_alpha(),
 pygame.image.load("plants/Sun/Sun_20.png").convert_alpha(),
 pygame.image.load("plants/Sun/Sun_21.png").convert_alpha()]
 
+zombie_anim_death = [pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_0.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_1.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_2.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_3.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_4.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_5.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_6.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_7.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_8.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_10.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_11.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_12.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_13.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_14.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_15.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_16.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieLostHead_17.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_0.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_1.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_2.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_3.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_4.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_5.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_6.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_7.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_8.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha()]
+
+
 
 running = True
 ingame = False
@@ -391,7 +457,11 @@ while running:
       for i in range(0,len(created_plant)):
           globals()['objp'+str((i+1))].animation(peashooter_anim)
       for i in range(0,len(created_zombie)):
-          globals()['objz'+str((i+1))].animation(zombie_anim)
+
+          if globals()['objz'+str((i+1))].health > 0:
+            globals()['objz'+str((i+1))].animation(zombie_anim,1)
+          else:
+            globals()['objz'+str((i+1))].death(zombie_anim_death)
       for i in range(0,len(created_bullet)):
           globals()['objb'+str(created_bullet[i-1])].move()
             
