@@ -155,7 +155,6 @@ class game():
         global created_plant
         if s_count.counter - 100 >= 0: #Replace 100 with an variable which the function takes in first and stores it to that
             s_count.update(-100)
-            created_plant.append(str(len(created_plant)+1))
             self.x,self.y=pygame.mouse.get_pos()
             self.distance = 9999
             self.targetx,self.targety = 0.0,0.0
@@ -166,13 +165,18 @@ class game():
                 if self.temp <= self.distance:
                     self.targetx,self.targety = self.c_coord[i][0],self.c_coord[i][1]
                     self.distance = self.temp
-            globals()['objp'+created_plant[len(created_plant)-1]] = peashooter(self.targetx-30,self.targety-25)
+            for j in range(0,999):
+                if j+1 not in created_plant:
+                    created_plant.append(j+1)
+                    globals()['objp'+str(j+1)] = peashooter(self.targetx-30,self.targety-25,j+1)
+                    break
+            
 
         #Validate there are only one plant on that tile
 #=================================================================================================
 class plant():
     
-    def __init__(self,x,y):
+    def __init__(self,x,y,index):
         self.health = 0
         self.a_dmg = 0
         self.a_speed = 0
@@ -182,6 +186,7 @@ class plant():
         self.x,self.y = x,y
         self.count = 0
         self.created = False
+        self.index = index
 
     def animation(self,obj):
         global bullet_normal
@@ -194,6 +199,7 @@ class plant():
             self.count = 0
         self.count += 1
         menu.screen.blit(self.currframe,(self.x,self.y))
+        self.death()
         self.shoot(bullet_normal)
 
     def shoot(self,obj):
@@ -205,7 +211,7 @@ class plant():
             self.created = False
             for i in created_zombie:
                 x,y = globals()['objz'+str(i)].coord()                 
-                if y + 50 == self.y + 25 and self.created == False: #If there is a zombie in front
+                if y + 50 == self.y + 25 and x >= self.x and self.created == False: #If there is a zombie in front
                     self.created = True
                     for j in range(1,999):
                         if j not in created_bullet:
@@ -213,14 +219,19 @@ class plant():
                             globals()['objb'+str(j)] = normal_b(10,obj,self.x-10,self.y,j)
                             break
 
-            
-    def takedmg(self): 
-        pass
+    def coord(self):
+        return self.x,self.y
 
+    def death(self):
+        global created_plant
+        if self.health <= 0 :
+            created_plant.remove(self.index)
+            del globals()['objp' + str(self.index)]
+            
 class peashooter(plant):
     global bullet_normal
     
-    def __init__(self,x,y):
+    def __init__(self,x,y,index):
         self.health = 100
         self.a_dmg = 20
         self.a_speed = 1
@@ -230,22 +241,20 @@ class peashooter(plant):
         self.x,self.y = x,y
         self.count = 0
         self.created = False
+        self.index = index
 #=================================================================================================
 class zombie():
 
     def __init__(self,x,y,index):
         self.health = 100
-        self.a_dmg = 20
-        self.a_speed = 3
-        self.m_speed = 0.05
+        self.dmg = 25
+        self.speed = 0.05
         self.framevalue = 0
         self.x,self.y = x,y
         self.count = 0
         self.index = index
         self.nocollision = False
-
-    def move(self):
-        pass
+        self.nocollisionplant = False
 
     def coord(self):
         return self.x,self.y
@@ -254,18 +263,22 @@ class zombie():
         self.atype = anim_type
         if self.framevalue >= len(obj):
             self.framevalue = 0
+            if self.collision() == True:
+                self.attack()
         self.currframe = obj[self.framevalue]
         if self.count == 16:
             self.framevalue += 1
             self.count = 0
-        self.count += 1
-        if anim_type == 1:
-            self.x -= self.m_speed
-            menu.screen.blit(self.currframe,(self.x,self.y))
-        elif anim_type == 2:
-            menu.screen.blit(self.currframe,(self.x-50,self.y-10))
             
-
+        self.count += 1
+        if self.atype == 1:
+            self.x -= self.speed
+            menu.screen.blit(self.currframe,(self.x,self.y))
+        elif self.atype == 2:
+            menu.screen.blit(self.currframe,(self.x-50,self.y-10))
+        elif self.atype == 3:
+            menu.screen.blit(self.currframe,(self.x,self.y))
+            
     def death(self):
         global created_zombie
         if self.health <= 0:
@@ -274,13 +287,25 @@ class zombie():
         if self.framevalue == len(zombie_anim_death):
             created_zombie.remove(self.index)
             del globals()['objz'+str(self.index)]
-            
+
+    def collision(self):
+        global created_plant
+        for i in created_plant:
+            x,y = globals()['objp'+str(i)].coord()
+            if int(self.x - 45) <= int(x) and int(self.x - 33) >= int(x) and int(self.y ) == int(y - 25):
+                self.target = i
+                return True
+                break
+
+    def attack(self):
+        global zombie_anim_attack
+        globals()['objp' + str(self.target)].health -= self.dmg
+          
 class normalzombie(zombie):
     def __init__(self,x,y,index):
-        self.health = 70
-        self.a_dmg = 20
-        self.a_speed = 3
-        self.m_speed = 0.05
+        self.health = 100
+        self.dmg = 25
+        self.speed = 0.05
         self.framevalue = 0
         self.x,self.y = x,y
         self.count = 0
@@ -311,8 +336,8 @@ class bullet():
         global created_bullet
         for i in created_zombie:
             x,y = globals()['objz'+str(i)].coord()
-            if int(self.x + 10) >= int(x - 20) and int(self.x + 10) <= int(x - 18) \
-            and int(self.y ) >= int(y) and int(self.y - 100) <= int(y)\
+            if int(self.x + 5) >= int(x - 20) and int(self.x + 5) <= int(x - 18) \
+            and int(self.y+20) >= int(y) and int(self.y - 100) <= int(y)\
             and globals()['objz'+str(i)].nocollision == False:
                 created_bullet.remove(self.index)
                 globals()['objz'+str(i)].health -= self.dmg
@@ -381,9 +406,6 @@ class sunlight():
             return True
         else:
             return False
-
-
-
 #=================================================================================================       
 class sunlightcounter():
     def __init__(self):
@@ -398,6 +420,18 @@ class sunlightcounter():
         output = font.render(str(self.counter),False,(0,0,0))
         output_rect = output.get_rect(center=(50, 95))
         menu.screen.blit(output,(output_rect))
+#=================================================================================================
+class Lawnmower():
+    def __init__(self):
+        self.dmg = 10000
+        self.speed = 1
+
+    def collision(self):
+        pass
+
+    def attack(self):
+        pass
+
 #=================================================================================================
 
 
@@ -512,6 +546,27 @@ pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alph
 pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
 pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha(),
 pygame.image.load("zombies/NormalZombie/ZombieDie/ZombieDie_9.png").convert_alpha()]
+zombie_anim_attack = [pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_0.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_1.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_2.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_3.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_4.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_5.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_6.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_7.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_8.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_9.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_10.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_11.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_12.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_13.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_14.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_15.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_16.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_17.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_18.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_19.png").convert_alpha(),
+pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_20.png").convert_alpha()]
 
 running = True
 ingame = False
@@ -521,6 +576,7 @@ created_zombie = []
 created_sun = []
 created_bullet = []
 created_sun = []
+created_lawnmower = []
 
 while running:
   for event in pygame.event.get():
@@ -548,7 +604,10 @@ while running:
         globals()['objs'+str(i)].animation(sun_anim)
     for i in created_zombie:
         if globals()['objz'+str(i)].health > 0:
-            globals()['objz'+str(i)].animation(zombie_anim,1)
+            if globals()['objz'+str(i)].collision() == True: #Collided with a plant
+                globals()['objz'+str(i)].animation(zombie_anim_attack,3)
+            else: #Walk
+                globals()['objz'+str(i)].animation(zombie_anim,1)
         else:
             globals()['objz'+str(i)].death()
     for i in created_bullet:
