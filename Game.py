@@ -11,7 +11,7 @@ clock =  pygame.time.Clock()
 width,height = (1100,680)#Size of window
 
 #Import assests
-lawnmower = pygame.image.load('Screen/car.png')
+
 slot = pygame.image.load('Screen/ChooserBackground.png')
 shovel = pygame.image.load('Screen/Shovel.jpg')
 bg = pygame.image.load("Background/mainmenu.png")
@@ -66,6 +66,8 @@ class game():
     global bg2
     global s_count
     global s_cd
+    global created_lawnmower
+    global lawnmower
 
     def __init__(self):
         self.lawnmower = lawnmower
@@ -78,26 +80,19 @@ class game():
                                 [300,370],[380,370],[460,370],[540,370],[620,370],[700,370],[780,370],[870,370],[960,370],
                                 [300,480],[380,480],[460,480],[540,480],[620,480],[700,480],[780,480],[870,480],[960,480],
                                 [300,590],[380,590],[460,590],[540,590],[620,590],[700,590],[780,590],[870,590],[960,590]]
-
+        self.l_coord = [[190, 120],[190, 220],[190, 320],[180, 420],[170, 550]]
         menu.screen.blit(self.background,(0,0))
         menu.screen.blit(self.slot,(0,0))
         menu.screen.blit(self.shovel,(660,0))
-        menu.screen.blit(self.lawnmower,(190, 120))
-        menu.screen.blit(self.lawnmower,(190, 220))
-        menu.screen.blit(self.lawnmower,(190, 320))
-        menu.screen.blit(self.lawnmower,(180, 420))
-        menu.screen.blit(self.lawnmower,(170, 550))
+        for i in created_lawnmower:
+            globals()['objl'+str(i)] = lawnmower(self.l_coord[i-1][0],self.l_coord[i-1][1],i)
         
     def refresh(self):
         
         menu.screen.blit(self.background,(0,0))
         menu.screen.blit(self.slot,(0,0))
         menu.screen.blit(self.shovel,(660,0))
-        menu.screen.blit(self.lawnmower,(190, 120))
-        menu.screen.blit(self.lawnmower,(190, 220))
-        menu.screen.blit(self.lawnmower,(190, 320))
-        menu.screen.blit(self.lawnmower,(180, 420))
-        menu.screen.blit(self.lawnmower,(170, 550))
+        
 
         test_card = card_peashooter()
         s_count.display()
@@ -171,7 +166,6 @@ class game():
                     globals()['objp'+str(j+1)] = peashooter(self.targetx-30,self.targety-25,j+1)
                     break
             
-
         #Validate there are only one plant on that tile
 #=================================================================================================
 class plant():
@@ -421,16 +415,38 @@ class sunlightcounter():
         output_rect = output.get_rect(center=(50, 95))
         menu.screen.blit(output,(output_rect))
 #=================================================================================================
-class Lawnmower():
-    def __init__(self):
+class lawnmower():
+    global lawnmower_anim
+    global created_zombie
+    def __init__(self,x,y,index):
+        
         self.dmg = 10000
-        self.speed = 1
+        self.speed = 1.25 
+        self.x = x
+        self.y = y
+        self.index = index
+        self.nomove = True
+        self.nocollision = True
+        menu.screen.blit(lawnmower_anim,(self.x,self.y))
+        
 
     def collision(self):
-        pass
+        for i in created_zombie:
+            x,y = globals()['objz'+str(i)].coord()
+            if self.y - 20 <= y and self.y + 20 >=y and int(self.x+55) <= int(x) and int(self.x+60) >= int(x):
+                self.nomove = False
+                globals()['objz'+str(i)].health -= self.dmg
 
-    def attack(self):
-        pass
+
+    def move(self):
+        if self.x >= 1110:
+            created_lawnmower.remove(self.index)
+            del globals()['objl'+str(self.index)]
+        if self.nomove == False:
+            self.x += self.speed
+        menu.screen.blit(lawnmower_anim,(self.x,self.y))
+        self.collision()
+
 
 #=================================================================================================
 
@@ -567,6 +583,7 @@ pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_17.png").conve
 pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_18.png").convert_alpha(),
 pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_19.png").convert_alpha(),
 pygame.image.load("zombies/NormalZombie/ZombieAttack/ZombieAttack_20.png").convert_alpha()]
+lawnmower_anim =  pygame.image.load('Screen/car.png')
 
 running = True
 ingame = False
@@ -576,7 +593,7 @@ created_zombie = []
 created_sun = []
 created_bullet = []
 created_sun = []
-created_lawnmower = []
+created_lawnmower = [1,2,3,4,5]
 
 while running:
   for event in pygame.event.get():
@@ -612,6 +629,8 @@ while running:
             globals()['objz'+str(i)].death()
     for i in created_bullet:
         globals()['objb'+str(i)].move()
+    for i in created_lawnmower:
+        globals()['objl'+str(i)].move()
     
     
   if drag == True:
